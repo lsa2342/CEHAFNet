@@ -20,8 +20,6 @@ project_root = '/home/lsa/Shared/ORSI-SOD'
 os.chdir(project_root)
 
 
-# import softpool_cuda
-# from SoftPool import soft_pool2d, SoftPool2d
 
 class BasicConv2d(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1, groups=1):
@@ -39,9 +37,9 @@ class BasicConv2d(nn.Module):
         return x
 
 
-class ChannelAttention(nn.Module):
+class ClassDistributor(nn.Module):
     def __init__(self, in_planes, ratio=16):
-        super(ChannelAttention, self).__init__()
+        super(ClassDistributor, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
         self.fc1 = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False) 
@@ -191,7 +189,7 @@ class CEM(nn.Module):
         return out
 
 
-class AEDB(nn.Module):
+class CRDB(nn.Module):
     """
         v3.5.0: idK1-Cca-sa+id
             v3.5.1: idk1-Cca-Csa+id bias=FFFT
@@ -216,7 +214,7 @@ class AEDB(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels):
-        super(AEDB, self).__init__()
+        super(CRDB, self).__init__()
         self.shortcut = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0),
             nn.BatchNorm2d(out_channels),
@@ -228,10 +226,9 @@ class AEDB(nn.Module):
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
         self.conv = nn.Conv2d(out_channels * 2, out_channels, kernel_size=1, padding=0)
-        self.ca = ChannelAttention(out_channels, 1)
-        self.sa = SpatialAttention()
+        self.ca = ClassDistributor(out_channels, 1)
+        self.sa = SA()
 
-    @get_local('out0', 'ca_w', 'sa_w', 'out1', 'out2', 'identity', 'out3')
     def forward(self, x):
         out0 = self.relu(self.bn1(self.conv1(x)))
         ###### 
@@ -332,7 +329,6 @@ class HAFM(nn.Module):
 
     @get_local('img_s', 'l_avg', 'l_w', 'fus')
     def forward(self, *img):
-        # img_s = torch.cat(img, dim=1)
         img_s = torch.stack(img, 1).squeeze(2)
         img_cat = self.prelu(self.conv(img_s))  # [1, num, H, W] torch.stack(img, 1).squeeze(2)
         l_avg = self.avg_pool(img_cat)
@@ -345,7 +341,7 @@ class HAFM(nn.Module):
 
 
 class CEHAFNet(nn.Module):
-    def __init__(self, n_channels=3, n_classes=1, block=AEDB):
+    def __init__(self, n_channels=3, n_classes=1, block=CRDB):
         super(CEHAFNet, self).__init__()
         # vgg:      64, 128, 256, 512, 512
         # resnet:   64, 256, 512, 1024, 2048
@@ -398,7 +394,7 @@ class CEHAFNet(nn.Module):
         self.s3 = SalHead(param_channels[1], 4)  # 8 // 2
         self.s2 = SalHead(param_channels[0], 2)  # 4 // 2
         self.s1 = SalHead(n_classes)  # 2 , 0.5
-        self.s = Fusion(5)
+        self.s = HAFM(5)
         # self.s = Fusion1([n_classes, param_channels[0], param_channels[1], param_channels[2], param_channels[3]])
         # self.s = Fusion2([n_classes, param_channels[0], param_channels[1], param_channels[2], param_channels[3]], 16)
 
@@ -470,7 +466,7 @@ class CEHAFNet(nn.Module):
                 nn.init.kaiming_normal_(m.fc2.weight, mode='fan_out', nonlinearity='relu')
                 if m.fc2.bias is not None:
                     nn.init.constant_(m.fc2.bias, 0)
-            elif isinstance(m, SpatialAttention):
+            elif isinstance(m, SA):
                 nn.init.kaiming_normal_(m.conv1.weight, mode='fan_out', nonlinearity='relu')
                 if m.conv1.bias is not None:
                     nn.init.constant_(m.conv1.bias, 0)
