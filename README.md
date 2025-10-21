@@ -1,6 +1,6 @@
 # CEHAFNet
 
-Contrast-enhanced hierarchical adaptive fusion network for salient object detection in optical remote sensing images
+Enhanced Saliency Detection in Remote Sensing: A Hierarchical Adaptive Fusion Approach
 
 
 
@@ -30,12 +30,19 @@ bytecode==0.16.0
 
 ## Datasets
 
-| Dataset Name | Source URL |
-|-------------|-----------|
-| ORSSD   | [LVNet](https://pan.baidu.com/s/1k44UlTLCW17AS0VhPyP7JA) |
-| EORSSD   | [DAFNet](https://github.com/rmcong/EORSSD-dataset) |
+| Dataset Name | Source URL                                                                                                          |
+|-------------|---------------------------------------------------------------------------------------------------------------------|
+| ORSSD   | [Github](https://github.com/rmcong/ORSSD-dataset) or [BaiduNetdisk](https://pan.baidu.com/s/1k44UlTLCW17AS0VhPyP7JA) |
+| EORSSD   | [DAFNet](https://github.com/rmcong/EORSSD-dataset)                                                                  |
 
 
+## Train
+
+After modifying the TODO tags in Train_AdpMLL.py, run it directly.
+
+## Test
+
+After modifying the `image_dir` and `prediction_dir` in mtest.py, run it directly.
 
 ## Contact
 
